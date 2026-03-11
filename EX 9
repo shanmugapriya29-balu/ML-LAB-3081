@@ -1,0 +1,75 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
+# ------------------------
+# Generate synthetic dataset
+# ------------------------
+np.random.seed(42)  # for reproducibility
+
+# Simulate total bills between $10 and $50
+total_bill = np.random.uniform(10, 50, 30)
+
+# Simulate tips as roughly 15% of the bill + some noise
+tip = total_bill * 0.15 + np.random.normal(0, 1.5, 30)
+
+# ------------------------
+# Kernel function for weights
+# ------------------------
+def kernel(point, X, k):
+    m, n = X.shape
+    weights = np.eye(m)
+    for j in range(m):
+        diff = point - X[j]
+        weights[j, j] = np.exp(-(diff @ diff.T) / (2 * k**2))
+    return weights
+
+# ------------------------
+# Local weighted regression for a single point
+# ------------------------
+def local_weight(point, X, y, k):
+    W = kernel(point, X, k)
+    theta = np.linalg.inv(X.T @ W @ X) @ (X.T @ W @ y)
+    return theta
+
+# ------------------------
+# Predict values for all points
+# ------------------------
+def lwlr_predict(X, y, k):
+    m, n = X.shape
+    y_pred = np.zeros(m)
+    for i in range(m):
+        theta = local_weight(X[i], X, y, k)
+        y_pred[i] = X[i] @ theta
+    return y_pred
+
+# ------------------------
+# Prepare X matrix with bias term
+# ------------------------
+m = len(total_bill)
+X = np.column_stack((np.ones(m), total_bill))  # shape m x 2
+y = tip  # shape m
+
+# ------------------------
+# Set kernel bandwidth and predict
+# ------------------------
+k = 2.0
+y_pred = lwlr_predict(X, y, k)
+
+# ------------------------
+# Sort for plotting
+# ------------------------
+sort_index = X[:, 1].argsort()
+X_sort = X[sort_index]
+y_sort = y_pred[sort_index]
+
+# ------------------------
+# Plot
+# ------------------------
+plt.figure(figsize=(8,6))
+plt.scatter(total_bill, tip, color='green', label='Data Points')
+plt.plot(X_sort[:, 1], y_sort, color='red', linewidth=2, label='LWLR Fit')
+plt.xlabel('Total Bill ($)')
+plt.ylabel('Tip ($)')
+plt.title('Locally Weighted Linear Regression (Synthetic Data)')
+plt.legend()
+plt.show()
