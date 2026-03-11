@@ -1,0 +1,48 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Training Data
+X = np.array([800, 1000, 1200, 1500, 1800, 2000], dtype=float)
+Y = np.array([20, 25, 30, 38, 45, 50], dtype=float)
+
+# Test Example
+x_test = 1400
+
+def locally_weighted_regression(x_query, X, Y, tau=200):
+    """
+    Locally Weighted Linear Regression
+    x_query: the point to predict
+    X: input features
+    Y: target values
+    tau: bandwidth parameter (controls how "local" the weighting is)
+    """
+    m = X.shape[0]
+    X_matrix = np.vstack((np.ones(m), X)).T  # Add intercept term
+    Y_matrix = Y.reshape(-1, 1)
+
+    # Weight matrix
+    W = np.diag([np.exp(-(x_query - X[i])**2 / (2 * tau**2)) for i in range(m)])
+
+    # Theta calculation: θ = (X^T W X)^(-1) X^T W Y
+    theta = np.linalg.pinv(X_matrix.T @ W @ X_matrix) @ (X_matrix.T @ W @ Y_matrix)
+
+    # Predict for x_query
+    x_query_vector = np.array([1, x_query])
+    y_pred = x_query_vector @ theta
+    return y_pred[0]
+
+# Predict the price for 1400 sq.ft
+predicted_price = locally_weighted_regression(x_test, X, Y, tau=200)
+print(f"Predicted price for a house of {x_test} sq.ft: ₹{predicted_price:.2f} Lakhs")
+
+# Optional: visualize the fit
+x_range = np.linspace(700, 2100, 200)
+y_range = [locally_weighted_regression(x, X, Y, tau=200) for x in x_range]
+
+plt.scatter(X, Y, color='red', label='Training Data')
+plt.plot(x_range, y_range, color='blue', label='LWLR Fit')
+plt.scatter(x_test, predicted_price, color='green', s=100, label='Prediction')
+plt.xlabel('House Size (sq.ft)')
+plt.ylabel('Price (₹ Lakhs)')
+plt.legend()
+plt.show()
